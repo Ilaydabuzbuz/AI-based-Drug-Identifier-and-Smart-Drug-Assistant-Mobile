@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_screen.dart';
+import 'signup_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -28,26 +30,34 @@ class WelcomeScreen extends StatelessWidget {
             ),
           ),
 
-          // LOG IN
+          // LOG IN LoginScreen
           Align(
             alignment: const Alignment(0, _loginAlignY),
             child: _HitAreaButton(
               width: buttonWidth,
               height: _buttonHeight,
               onTap: () {
-                debugPrint('Log In tapped');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                );
               },
             ),
           ),
 
-          // SIGN UP
+          // SIGN UP SignUpScreen
           Align(
             alignment: const Alignment(0, _signupAlignY),
             child: _HitAreaButton(
               width: buttonWidth,
               height: _buttonHeight,
               onTap: () {
-                debugPrint('Sign Up tapped');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SignUpScreen(),
+                  ),
+                );
               },
             ),
           ),
