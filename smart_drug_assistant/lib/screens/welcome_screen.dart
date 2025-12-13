@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'chat.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 
@@ -16,18 +17,14 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    final double buttonWidth =
-        size.width * (_buttonDesignWidth / _designWidth);
+    final double buttonWidth = size.width * (_buttonDesignWidth / _designWidth);
 
     return Scaffold(
       body: Stack(
         children: [
           // Arka plan
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/welcome.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/welcome.png', fit: BoxFit.cover),
           ),
 
           // LOG IN LoginScreen
@@ -37,11 +34,9 @@ class WelcomeScreen extends StatelessWidget {
               width: buttonWidth,
               height: _buttonHeight,
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const LoginScreen(),
-                  ),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
               },
             ),
           ),
@@ -53,11 +48,9 @@ class WelcomeScreen extends StatelessWidget {
               width: buttonWidth,
               height: _buttonHeight,
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SignUpScreen(),
-                  ),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
               },
             ),
           ),
