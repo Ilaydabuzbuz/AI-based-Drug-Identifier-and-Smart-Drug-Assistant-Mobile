@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart';
+import 'home_screen.dart';
+
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -81,7 +83,9 @@ class LoginScreen extends StatelessWidget {
                     child: PeachButton(
                       label: 'Log In',
                       onTap: () {
-                        debugPrint('Log In tapped');
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        );
                       },
                     ),
                   ),
