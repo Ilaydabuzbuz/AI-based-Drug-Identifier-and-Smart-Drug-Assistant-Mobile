@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_drug_assistant/screens/pill_Identification_screen.dart';
 import 'chat.dart';
 import 'welcome_screen.dart';
 import 'profile_screen.dart';
@@ -55,7 +56,13 @@ class HomeScreen extends StatelessWidget {
                         // Quick action butonları
                         _QuickActions(
                           scale: scale,
-                          onPillId: () => debugPrint('Pill identification tapped'),
+                          onPillId: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PillIdentificationScreen(),
+                              ),
+                            );
+                          },
                           onMyMedicine: () => debugPrint('My Medicine tapped'),
                           onChatbot: () {
                             Navigator.of(context).push(
@@ -765,12 +772,6 @@ class _NavIcon extends StatelessWidget {
       borderRadius: BorderRadius.circular(20 * scale),
       child: Container(
         padding: EdgeInsets.all(10 * scale),
-        decoration: selected
-            ? BoxDecoration(
-          color: Colors.white.withOpacity(0.18),
-          shape: BoxShape.circle,
-        )
-            : null,
         child: Icon(
           icon,
           size: 24 * scale,

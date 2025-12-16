@@ -48,9 +48,11 @@ class WelcomeScreen extends StatelessWidget {
               width: buttonWidth,
               height: _buttonHeight,
               onTap: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SignUpScreen(),
+                  ),
+                );
               },
             ),
           ),
