@@ -1,20 +1,141 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
   static const double _designWidth = 360;
   static const double _fieldDesignWidth = 299;
   static const double _buttonDesignWidth = 207;
+
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _passwordController.dispose();
+    _emailController.dispose();
+    _mobileController.dispose();
+    _dobController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignup() async {
+    final fullName = _fullNameController.text.trim();
+    final password = _passwordController.text;
+    final email = _emailController.text.trim();
+
+    if (fullName.isEmpty || password.isEmpty || email.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please fill in all required fields';
+      });
+      return;
+    }
+
+    // Basic email validation
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email';
+      });
+      return;
+    }
+
+    // Password length check
+    if (password.length < 4) {
+      setState(() {
+        _errorMessage = 'Password must be at least 4 characters';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final result = await AuthService.signup(
+      email: email,
+      password: password,
+      fullName: fullName,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result.success) {
+      // Show success message and navigate to login
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully! Please login.'),
+          backgroundColor: Color(0xFFE29A66),
+        ),
+      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    } else {
+      setState(() {
+        _errorMessage = result.errorMessage;
+      });
+    }
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initialDate = DateTime(now.year - 18, now.month, now.day);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE29A66),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            dialogBackgroundColor: const Color(0xFFFFF4EC),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final day = picked.day.toString().padLeft(2, '0');
+      final month = picked.month.toString().padLeft(2, '0');
+      final year = picked.year.toString();
+      setState(() {
+        _dobController.text = '$day/$month/$year';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    final double fieldWidth =
-        size.width * (_fieldDesignWidth / _designWidth);
-    final double buttonWidth =
-        size.width * (_buttonDesignWidth / _designWidth);
+    final double fieldWidth = size.width * (_fieldDesignWidth / _designWidth);
+    final double buttonWidth = size.width * (_buttonDesignWidth / _designWidth);
 
     return Scaffold(
       body: Stack(
@@ -30,7 +151,6 @@ class SignUpScreen extends StatelessWidget {
           SafeArea(
             child: Stack(
               children: [
-
                 Align(
                   alignment: const Alignment(-0.88, -0.99),
                   child: SizedBox(
@@ -51,8 +171,9 @@ class SignUpScreen extends StatelessWidget {
                   alignment: const Alignment(0, -0.77),
                   child: SizedBox(
                     width: fieldWidth,
-                    child: const _SignUpField(
+                    child: _SignUpField(
                       hintText: 'Full name',
+                      controller: _fullNameController,
                     ),
                   ),
                 ),
@@ -62,10 +183,11 @@ class SignUpScreen extends StatelessWidget {
                   alignment: const Alignment(0, -0.50),
                   child: SizedBox(
                     width: fieldWidth,
-                    child: const _SignUpField(
+                    child: _SignUpField(
                       hintText: 'Password',
                       obscureText: true,
                       showEye: true,
+                      controller: _passwordController,
                     ),
                   ),
                 ),
@@ -75,9 +197,10 @@ class SignUpScreen extends StatelessWidget {
                   alignment: const Alignment(0, -0.24),
                   child: SizedBox(
                     width: fieldWidth,
-                    child: const _SignUpField(
+                    child: _SignUpField(
                       hintText: 'Email',
                       keyboardType: TextInputType.emailAddress,
+                      controller: _emailController,
                     ),
                   ),
                 ),
@@ -87,9 +210,10 @@ class SignUpScreen extends StatelessWidget {
                   alignment: const Alignment(0, 0.03),
                   child: SizedBox(
                     width: fieldWidth,
-                    child: const _SignUpField(
+                    child: _SignUpField(
                       hintText: 'Mobile Number',
                       keyboardType: TextInputType.phone,
+                      controller: _mobileController,
                     ),
                   ),
                 ),
@@ -99,24 +223,41 @@ class SignUpScreen extends StatelessWidget {
                   alignment: const Alignment(0, 0.30),
                   child: SizedBox(
                     width: fieldWidth,
-                    child: const _SignUpField(
+                    child: _SignUpField(
                       hintText: 'Date Of Birth',
                       isDateField: true,
+                      controller: _dobController,
+                      onDateTap: () => _pickDate(context),
                     ),
                   ),
                 ),
+
+                // Error message
+                if (_errorMessage != null)
+                  Align(
+                    alignment: const Alignment(0, 0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
 
                 // SIGN UP butonu
                 Align(
                   alignment: const Alignment(0, 0.60),
                   child: SizedBox(
                     width: buttonWidth,
-                    child: _SignUpButton(
-                      label: 'Sign Up',
-                      onTap: () {
-                        debugPrint('Sign Up tapped');
-                      },
-                    ),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFE29A66),
+                            ),
+                          )
+                        : _SignUpButton(label: 'Sign Up', onTap: _handleSignup),
                   ),
                 ),
               ],
@@ -134,8 +275,9 @@ class _SignUpField extends StatefulWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final bool showEye;
-
   final bool isDateField;
+  final TextEditingController? controller;
+  final VoidCallback? onDateTap;
 
   const _SignUpField({
     required this.hintText,
@@ -143,6 +285,8 @@ class _SignUpField extends StatefulWidget {
     this.obscureText = false,
     this.showEye = false,
     this.isDateField = false,
+    this.controller,
+    this.onDateTap,
   });
 
   @override
@@ -151,56 +295,12 @@ class _SignUpField extends StatefulWidget {
 
 class _SignUpFieldState extends State<_SignUpField> {
   late bool _obscure;
-  late TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
     _obscure = widget.obscureText;
-    _controller = TextEditingController();
   }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate(BuildContext context) async {
-    final now = DateTime.now();
-    final initialDate = DateTime(now.year - 18, now.month, now.day);
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: now,
-
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE29A66),      // seçili tarih, OK butonu
-              onPrimary: Colors.white,         // seçili tarih yazısı
-              onSurface: Colors.black87,       // takvim yazıları
-            ),
-            dialogBackgroundColor: Color(0xFFFFF4EC),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      final day = picked.day.toString().padLeft(2, '0');
-      final month = picked.month.toString().padLeft(2, '0');
-      final year = picked.year.toString();
-      setState(() {
-        _controller.text = '$day/$month/$year';
-      });
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -209,18 +309,15 @@ class _SignUpFieldState extends State<_SignUpField> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/field_bg.png',
-              fit: BoxFit.fill,
-            ),
+            child: Image.asset('assets/images/field_bg.png', fit: BoxFit.fill),
           ),
           TextField(
-            controller: _controller,
-            keyboardType: widget.isDateField ? TextInputType.none : widget.keyboardType,
+            controller: widget.controller,
+            keyboardType: widget.isDateField
+                ? TextInputType.none
+                : widget.keyboardType,
             readOnly: widget.isDateField,
-            onTap: widget.isDateField
-                ? () => _pickDate(context)
-                : null,
+            onTap: widget.isDateField ? widget.onDateTap : null,
             obscureText: _obscure && !widget.isDateField,
             decoration: InputDecoration(
               border: InputBorder.none,
@@ -230,26 +327,21 @@ class _SignUpFieldState extends State<_SignUpField> {
               ),
               suffixIcon: widget.showEye && !widget.isDateField
                   ? IconButton(
-                splashRadius: 18,
-                icon: Icon(
-                  _obscure
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  size: 18,
-                  color: Colors.black54,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscure = !_obscure;
-                  });
-                },
-              )
+                      splashRadius: 18,
+                      icon: Icon(
+                        _obscure ? Icons.visibility_off : Icons.visibility,
+                        size: 18,
+                        color: Colors.black54,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscure = !_obscure;
+                        });
+                      },
+                    )
                   : null,
             ),
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black,
-            ),
+            style: const TextStyle(fontSize: 15, color: Colors.black),
           ),
         ],
       ),
@@ -262,10 +354,7 @@ class _SignUpButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _SignUpButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _SignUpButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

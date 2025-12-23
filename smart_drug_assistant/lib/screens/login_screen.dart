@@ -1,33 +1,80 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
 
-
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   static const double _designWidth = 360;
   static const double _fieldDesignWidth = 299;
   static const double _buttonDesignWidth = 207;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter email and password';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final result = await AuthService.login(email, password);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result.success) {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else {
+      setState(() {
+        _errorMessage = result.errorMessage;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    final double fieldWidth =
-        size.width * (_fieldDesignWidth / _designWidth);
-    final double buttonWidth =
-        size.width * (_buttonDesignWidth / _designWidth);
+    final double fieldWidth = size.width * (_fieldDesignWidth / _designWidth);
+    final double buttonWidth = size.width * (_buttonDesignWidth / _designWidth);
 
     return Scaffold(
       body: Stack(
         children: [
           // ARKA PLAN
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/login_bg.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/login_bg.png', fit: BoxFit.cover),
           ),
 
           // GERİ BUTONU
@@ -57,9 +104,10 @@ class LoginScreen extends StatelessWidget {
                   // EMAIL FIELD
                   SizedBox(
                     width: fieldWidth,
-                    child: const PeachField(
+                    child: PeachField(
                       hintText: 'Email',
                       keyboardType: TextInputType.emailAddress,
+                      controller: _emailController,
                     ),
                   ),
 
@@ -68,26 +116,39 @@ class LoginScreen extends StatelessWidget {
                   // PASSWORD FIELD
                   SizedBox(
                     width: fieldWidth,
-                    child: const PeachField(
+                    child: PeachField(
                       hintText: 'Password',
                       obscureText: true,
                       showEye: true,
+                      controller: _passwordController,
                     ),
                   ),
+
+                  // Error message
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 80),
 
                   // LOG IN BUTTON
                   SizedBox(
                     width: buttonWidth,
-                    child: PeachButton(
-                      label: 'Log In',
-                      onTap: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
-                        );
-                      },
-                    ),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFE29A66),
+                            ),
+                          )
+                        : PeachButton(label: 'Log In', onTap: _handleLogin),
                   ),
 
                   const Spacer(),
@@ -108,9 +169,7 @@ class LoginScreen extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SignUpScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SignUpScreen()),
                     );
                   },
                 ),
@@ -129,6 +188,7 @@ class PeachField extends StatefulWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final bool showEye;
+  final TextEditingController? controller;
 
   const PeachField({
     super.key,
@@ -136,6 +196,7 @@ class PeachField extends StatefulWidget {
     this.keyboardType,
     this.obscureText = false,
     this.showEye = false,
+    this.controller,
   });
 
   @override
@@ -158,12 +219,10 @@ class _PeachFieldState extends State<PeachField> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/field_bg.png',
-              fit: BoxFit.fill,
-            ),
+            child: Image.asset('assets/images/field_bg.png', fit: BoxFit.fill),
           ),
           TextField(
+            controller: widget.controller,
             keyboardType: widget.keyboardType,
             obscureText: _obscure,
             decoration: InputDecoration(
@@ -174,26 +233,21 @@ class _PeachFieldState extends State<PeachField> {
               ),
               suffixIcon: widget.showEye
                   ? IconButton(
-                splashRadius: 18,
-                icon: Icon(
-                  _obscure
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  size: 18,
-                  color: Colors.black54,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscure = !_obscure;
-                  });
-                },
-              )
+                      splashRadius: 18,
+                      icon: Icon(
+                        _obscure ? Icons.visibility_off : Icons.visibility,
+                        size: 18,
+                        color: Colors.black54,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscure = !_obscure;
+                        });
+                      },
+                    )
                   : null,
             ),
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black,
-            ),
+            style: const TextStyle(fontSize: 15, color: Colors.black),
           ),
         ],
       ),
@@ -206,11 +260,7 @@ class PeachButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const PeachButton({
-    super.key,
-    required this.label,
-    required this.onTap,
-  });
+  const PeachButton({super.key, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
