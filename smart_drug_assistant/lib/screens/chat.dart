@@ -23,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Ollama URL hosting Rag Model
   // FastAPI endpoint
-  final String _apiUrl = 'http://192.168.1.11:8000/rag/query';
+  final String _apiUrl = 'http://127.0.0.1:8000/rag/query';
   //                                            ^^^^ FastAPI port
 
   Future<void> _sendMessage() async {

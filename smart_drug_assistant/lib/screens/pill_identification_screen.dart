@@ -1,6 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:async/async.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:smart_drug_assistant/screens/pill_identification_results_screen.dart';
+
 import 'home_screen.dart';
 import 'adding_pill_screen.dart';
 
@@ -20,6 +26,42 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
 
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
+  bool _isLoading = false;
+
+  Future<void> _uploadImage() async {
+    if (_selectedImage == null) return;
+    setState(() => _isLoading = true);
+
+    final uri = Uri.parse('http://127.0.0.1:8000/pill_identify/');
+    final request = http.MultipartRequest('POST', uri);
+    final file = await http.MultipartFile.fromPath(
+      'file',
+      _selectedImage!.path,
+    );
+    request.files.add(file);
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final results = jsonDecode(responseBody);
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PillIdentificationResultsScreen(results: results),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        _showError('Failed to upload image: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Failed to upload image: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _pickFromCamera() async {
     try {
@@ -65,12 +107,30 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
         return Dialog(
           insetPadding: const EdgeInsets.all(18),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Image.file(file, fit: BoxFit.cover),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                ),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Image.file(file, fit: BoxFit.cover),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _uploadImage();
+                  },
+                  child: const Text('Continue'),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -152,7 +212,6 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
                   child: Column(
                     children: [
                       const Spacer(flex: 16),
-
                       _PeachButton(
                         scale: scale,
                         label: 'Identify With Camera',
@@ -165,7 +224,6 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
                         onTap: _pickFromGallery,
                       ),
                       SizedBox(height: 16 * scale),
-
                       _PeachButton(
                         scale: scale,
                         label: 'Add Manually',
@@ -177,7 +235,6 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
                           );
                         },
                       ),
-
                       const Spacer(flex: 3),
                     ],
                   ),
@@ -191,7 +248,7 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
                     onHome: () {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (_) => const HomeScreen()),
-                            (route) => false,
+                        (route) => false,
                       );
                     },
                     onProfile: () => debugPrint('Profile tapped'),
@@ -200,6 +257,13 @@ class _PillIdentificationScreenState extends State<PillIdentificationScreen> {
               ],
             ),
           ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
         ],
       ),
     );
